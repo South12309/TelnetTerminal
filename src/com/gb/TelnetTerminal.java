@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,10 +82,36 @@ public class TelnetTerminal {
             String files = Files.list(current)
                     .map(p -> p.getFileName().toString())
                     .collect(Collectors.joining("\n\r"));
-            channel.write(ByteBuffer.wrap(files.getBytes(StandardCharsets.UTF_8)));
-        }
-        else {
-            byte[] bytes = command.getBytes(StandardCharsets.UTF_8);
+            channel.write(ByteBuffer.wrap((files+"\n\r").getBytes(StandardCharsets.UTF_8)));
+        } else
+
+        if (command.startsWith("cd ")) {
+            String newRootDir = command.split(" ")[1];
+            current = current.resolve(newRootDir);
+        } else
+
+        if (command.startsWith("touch ")) {
+            String newFileName = command.split(" ")[1];
+            Path newFile = current.resolve(newFileName);
+            Files.createFile(newFile);
+        } else
+
+        if (command.startsWith("mkdir ")) {
+            String newDir = command.split(" ")[1];
+            Path path = current.resolve(newDir);
+            Files.createDirectories(path);
+        } else
+
+        if (command.startsWith("cat ")) {
+            String fileForReadName = command.split(" ")[1];
+            Path fileForRead = current.resolve(fileForReadName);
+            List<String> strings = Files.readAllLines(fileForRead);
+            for (String string : strings) {
+                channel.write(ByteBuffer.wrap((string+"\n\r").getBytes(StandardCharsets.UTF_8)));
+            }
+
+        } else {
+            byte[] bytes = "Unknown command\n\r".getBytes(StandardCharsets.UTF_8);
             channel.write(ByteBuffer.wrap(bytes));
         }
     }
